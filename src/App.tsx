@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
-// Vercelおよびローカル開発環境用（.envから読み込み）
+// 環境変数から読み込み
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -161,7 +161,14 @@ export default function App() {
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const [apiKey, setApiKey] = useState('');
+  // AI & Settings State
+  // 優先順位: 環境変数 > LocalStorage > 空文字
+  const [apiKey, setApiKey] = useState(
+    import.meta.env.VITE_GEMINI_API_KEY || 
+    localStorage.getItem('moneyflow_gemini_key') || 
+    ''
+  );
+  
   const [isScanning, setIsScanning] = useState(false);
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -179,12 +186,6 @@ export default function App() {
       }
     });
     return () => unsubscribe();
-  }, []);
-
-  // Load API Key
-  useEffect(() => {
-    const savedKey = localStorage.getItem('moneyflow_gemini_key');
-    if (savedKey) setApiKey(savedKey);
   }, []);
 
   // Initialize Categories
