@@ -49,7 +49,7 @@ import {
 /* 【重要: Vercelやローカル環境で動かす場合】
   以下の `firebaseConfig` の定義を有効にし（コメントアウトを外す）、
   下の `const firebaseConfig = ...` (プレビュー用) を削除またはコメントアウトしてください。
-  
+*/
   const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -58,14 +58,15 @@ import {
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID
   };
-*/
+
 
 // 【プレビュー環境用設定】
 // ※ Vercelにデプロイする際は、ここは削除して上の設定を使ってください。
+/*
 const firebaseConfig = typeof __firebase_config !== 'undefined' 
   ? JSON.parse(__firebase_config) 
   : { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
-
+*/
 // 初期化チェック
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
