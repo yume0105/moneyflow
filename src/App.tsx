@@ -84,6 +84,7 @@ type ScannedItem = {
 
 type Category = {
   id: string;
+  docId?: string; // ★修正: 本当のドキュメントID用
   name: string;
   icon: string;
   color: string;
@@ -208,7 +209,13 @@ export default function App() {
 
     const catQuery = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'categories');
     const unsubCats = onSnapshot(catQuery, (snapshot) => {
-      const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      // ★修正: docIdを追加して、本当のドキュメントIDを保持する
+      const cats = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data(), 
+        docId: doc.id // ここで保存
+      } as Category));
+
       if (cats.length === 0) {
         initializeCategories(user.uid);
       } else {
@@ -412,9 +419,14 @@ export default function App() {
       order: editingCategory.order ?? categories.length
     };
     try {
-      if (editingCategory.id) {
-        await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'categories', editingCategory.id), catData);
+      // ★修正: docId または id を使用して更新対象を特定
+      const targetId = editingCategory.docId || editingCategory.id;
+      
+      if (targetId) {
+        // 既存のカテゴリ更新
+        await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'categories', targetId), catData);
       } else {
+        // 新規カテゴリ作成
         await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'categories'), catData);
       }
       setEditingCategory(null);
@@ -445,7 +457,8 @@ export default function App() {
     return { totalExpense, totalBudget, categoryStats, filteredTrans };
   }, [transactions, categories, viewDate, viewMode]);
 
-  // Views rendering helpers
+  // ... (renderPeriodSelector, renderDashboardView, renderAddTransactionView, renderHistoryListView は変更なし)
+  
   const renderPeriodSelector = () => (
     <div className="bg-white/80 backdrop-blur-sm px-4 py-3 border-b border-pink-100 flex items-center justify-between sticky top-0 z-10 shadow-sm">
       <div className="flex bg-pink-50 rounded-full p-1 border border-pink-100">
@@ -877,7 +890,8 @@ export default function App() {
                 </div>
                 <div className="flex gap-1">
                   <button onClick={() => setEditingCategory(cat)} className="p-2 text-gray-300 hover:text-pink-500 hover:bg-pink-50 rounded-lg transition-colors"><Settings className="w-4 h-4" /></button>
-                  <button onClick={() => handleDeleteCategory(cat.id)} className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                  {/* ★修正: docId または id を使用して削除対象を特定 */}
+                  <button onClick={() => handleDeleteCategory(cat.docId || cat.id)} className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
