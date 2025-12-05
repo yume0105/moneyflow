@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-// Firebase SDK - npm install firebase でインストールが必要です
+// Firebase SDK
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -21,7 +21,7 @@ import {
   writeBatch,
   getDocs
 } from 'firebase/firestore';
-// Lucide Icons - npm install lucide-react でインストールが必要です
+// Lucide Icons
 import { 
   Plus, 
   Trash2, 
@@ -45,35 +45,23 @@ import {
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
+// Vercelおよびローカル開発環境用（.envから読み込み）
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
 
-/* 【重要: Vercelやローカル環境で動かす場合】
-  以下の `firebaseConfig` の定義を有効にし（コメントアウトを外す）、
-  下の `const firebaseConfig = ...` (プレビュー用) を削除またはコメントアウトしてください。
-*/
-  const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID
-  };
-
-
-// 【プレビュー環境用設定】
-// ※ Vercelにデプロイする際は、ここは削除して上の設定を使ってください。
-/*
-const firebaseConfig = typeof __firebase_config !== 'undefined' 
-  ? JSON.parse(__firebase_config) 
-  : { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
-*/
 // 初期化チェック
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 // このアプリ専用のID
-const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'moneyflow-v1'; 
+const APP_ID = 'moneyflow-v1'; 
 
 // --- Types ---
 type Transaction = {
@@ -185,10 +173,8 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // ログインしていたらデータ読み込み開始などの処理
         setLoading(false);
       } else {
-        // 未ログインなら匿名ログインを試みる（またはログイン画面を表示する）
         signInAnonymously(auth).catch((err) => console.error("Auth Error", err));
       }
     });
@@ -219,7 +205,6 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
-    // パスを環境に合わせて調整: artifacts/APP_ID/users/UID/...
     const catQuery = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'categories');
     const unsubCats = onSnapshot(catQuery, (snapshot) => {
       const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
