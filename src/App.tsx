@@ -45,7 +45,6 @@ import {
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
-// 環境変数から読み込み
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -84,7 +83,7 @@ type ScannedItem = {
 
 type Category = {
   id: string;
-  docId?: string; // ★修正: 本当のドキュメントID用
+  docId?: string;
   name: string;
   icon: string;
   color: string;
@@ -163,7 +162,6 @@ export default function App() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   // AI & Settings State
-  // 優先順位: 環境変数 > LocalStorage > 空文字
   const [apiKey, setApiKey] = useState(
     import.meta.env.VITE_GEMINI_API_KEY || 
     localStorage.getItem('moneyflow_gemini_key') || 
@@ -209,11 +207,10 @@ export default function App() {
 
     const catQuery = collection(db, 'artifacts', APP_ID, 'users', user.uid, 'categories');
     const unsubCats = onSnapshot(catQuery, (snapshot) => {
-      // ★修正: docIdを追加して、本当のドキュメントIDを保持する
       const cats = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         ...doc.data(), 
-        docId: doc.id // ここで保存
+        docId: doc.id
       } as Category));
 
       if (cats.length === 0) {
@@ -394,9 +391,8 @@ export default function App() {
       setItemName('');
       setStoreName('');
       setNote('');
-      if (window.innerWidth < 768) {
-        setActiveTab('dashboard');
-      }
+      // 入力後はダッシュボードに戻る（全デバイス共通）
+      setActiveTab('dashboard');
     } catch (error) {
       console.error("Error adding transaction:", error);
     }
@@ -419,14 +415,10 @@ export default function App() {
       order: editingCategory.order ?? categories.length
     };
     try {
-      // ★修正: docId または id を使用して更新対象を特定
       const targetId = editingCategory.docId || editingCategory.id;
-      
       if (targetId) {
-        // 既存のカテゴリ更新
         await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'categories', targetId), catData);
       } else {
-        // 新規カテゴリ作成
         await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'categories'), catData);
       }
       setEditingCategory(null);
@@ -457,8 +449,6 @@ export default function App() {
     return { totalExpense, totalBudget, categoryStats, filteredTrans };
   }, [transactions, categories, viewDate, viewMode]);
 
-  // ... (renderPeriodSelector, renderDashboardView, renderAddTransactionView, renderHistoryListView は変更なし)
-  
   const renderPeriodSelector = () => (
     <div className="bg-white/80 backdrop-blur-sm px-4 py-3 border-b border-pink-100 flex items-center justify-between sticky top-0 z-10 shadow-sm">
       <div className="flex bg-pink-50 rounded-full p-1 border border-pink-100">
@@ -474,7 +464,7 @@ export default function App() {
   );
 
   const renderDashboardView = () => (
-    <div className="space-y-6 animate-fade-in h-full flex flex-col">
+    <div className="space-y-6 animate-fade-in h-full flex flex-col pb-4">
       <div className="bg-white rounded-[24px] shadow-sm p-6 border border-pink-100 flex-shrink-0 relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
           <RibbonIcon className="w-24 h-24 text-pink-500 transform rotate-12" />
@@ -523,12 +513,10 @@ export default function App() {
 
   const renderAddTransactionView = () => (
     <div className="bg-white rounded-[24px] shadow-lg shadow-pink-100/50 p-6 h-full flex flex-col animate-slide-up border border-pink-100 relative overflow-hidden">
-       {/* Decorative Background Ribbon */}
        <div className="absolute -top-10 -right-10 text-pink-50 opacity-50 transform rotate-45 pointer-events-none">
           <RibbonIcon className="w-48 h-48" />
        </div>
 
-       {/* Camera Scan Overlay */}
        {isScanning && (
          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center animate-fade-in">
            <div className="relative">
@@ -542,7 +530,6 @@ export default function App() {
          </div>
        )}
 
-       {/* SCANNED ITEMS REVIEW MODE */}
        {scannedItems.length > 0 ? (
          <div className="flex flex-col h-full relative z-10 animate-fade-in">
             <div className="flex items-center justify-between mb-4">
@@ -609,7 +596,6 @@ export default function App() {
                             </div>
                         </div>
                         
-                        {/* Compact Category Selector */}
                         <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar">
                             {categories.map(cat => (
                                 <button
@@ -650,9 +636,9 @@ export default function App() {
             </div>
          </div>
        ) : (
-         /* MANUAL INPUT MODE (Original) */
+         /* MANUAL INPUT MODE - SCROLL FIX APPLIED HERE */
          <>
-           <div className="flex items-center justify-between mb-6 relative z-10">
+           <div className="flex items-center justify-between mb-4 relative z-10 flex-shrink-0">
              <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2">
                <span className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center text-pink-500">
                   <CreditCard className="w-4 h-4" />
@@ -675,8 +661,8 @@ export default function App() {
              />
            </div>
 
-           <form onSubmit={handleAddTransaction} className="flex flex-col h-full space-y-4 relative z-10">
-             {/* ... existing form content ... */}
+           {/* ★変更点: formにoverflow-y-autoを追加し、全体をスクロール可能に */}
+           <form onSubmit={handleAddTransaction} className="flex flex-col h-full overflow-y-auto space-y-4 relative z-10 pr-1 pb-4">
              <div>
                <div className="relative">
                  <input
@@ -718,7 +704,8 @@ export default function App() {
                 </div>
              </div>
 
-             <div className="flex-1 overflow-y-auto min-h-0 py-2">
+             {/* ★変更点: カテゴリ部分のスクロールを削除 */}
+             <div className="py-2">
                <label className="text-xs font-bold text-pink-300 mb-2 block px-1 flex items-center gap-1">
                  <Sparkles className="w-3 h-3" /> カテゴリ
                </label>
@@ -770,7 +757,7 @@ export default function App() {
              <button
                type="submit"
                disabled={!amount}
-               className="flex-shrink-0 w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-pink-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-95 transition-all"
+               className="flex-shrink-0 w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-pink-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-95 transition-all mt-auto"
              >
                <Save className="w-5 h-5" /> 
                <span>この内容で記録</span>
@@ -782,7 +769,7 @@ export default function App() {
   );
 
   const renderHistoryListView = () => (
-    <div className="h-full flex flex-col bg-white rounded-[24px] shadow-sm border border-pink-100 overflow-hidden">
+    <div className="h-full flex flex-col bg-white rounded-[24px] shadow-sm border border-pink-100 overflow-hidden pb-4">
       <div className="p-5 border-b border-pink-100 bg-white sticky top-0 z-10 flex justify-between items-center">
         <h2 className="text-lg font-bold text-gray-700">履歴リスト</h2>
         <span className="text-xs bg-pink-100 text-pink-500 px-3 py-1 rounded-full font-bold">{periodData.filteredTrans.length}件</span>
@@ -832,7 +819,7 @@ export default function App() {
   );
 
   const renderSettingsView = () => (
-    <div className="bg-white rounded-[24px] shadow-sm p-6 h-full flex flex-col animate-fade-in border border-pink-100">
+    <div className="bg-white rounded-[24px] shadow-sm p-6 h-full flex flex-col animate-fade-in border border-pink-100 pb-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-bold text-gray-700 flex items-center gap-2">
             <Settings className="w-5 h-5 text-pink-400" /> 設定
@@ -890,7 +877,6 @@ export default function App() {
                 </div>
                 <div className="flex gap-1">
                   <button onClick={() => setEditingCategory(cat)} className="p-2 text-gray-300 hover:text-pink-500 hover:bg-pink-50 rounded-lg transition-colors"><Settings className="w-4 h-4" /></button>
-                  {/* ★修正: docId または id を使用して削除対象を特定 */}
                   <button onClick={() => handleDeleteCategory(cat.docId || cat.id)} className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
@@ -959,76 +945,52 @@ export default function App() {
   if (loading) return <div className="min-h-screen bg-[#FFF5F7] flex items-center justify-center"><Loader2 className="w-10 h-10 text-pink-400 animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#FFF5F7] font-sans text-gray-700 flex flex-col md:h-screen md:overflow-hidden selection:bg-pink-200 selection:text-pink-800">
-      <header className="bg-white/80 backdrop-blur-md shadow-sm flex-shrink-0 z-20 border-b border-pink-100 sticky top-0">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-700 flex items-center gap-2 tracking-tight">
-            <RibbonIcon className="w-7 h-7 text-pink-500" />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-400">MoneyFlow</span>
-          </h1>
-          <div className="hidden md:flex gap-2">
-             {/* PC Nav */}
-             <button onClick={() => setActiveTab('dashboard')} className="px-4 py-2 rounded-full text-sm font-bold text-gray-400 hover:text-pink-400">ダッシュボード</button>
-             <button onClick={() => setActiveTab('settings')} className="px-4 py-2 rounded-full text-sm font-bold text-gray-400 hover:text-pink-400">設定</button>
+    // ★変更点: 全画面中央配置のコンテナ（PC用）
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center font-sans text-gray-700 selection:bg-pink-200 selection:text-pink-800">
+      
+      {/* スマホサイズを模倣したメインコンテナ */}
+      <div className="w-full max-w-[480px] h-[100dvh] md:h-[90vh] md:max-h-[850px] bg-[#FFF5F7] md:rounded-[35px] md:shadow-2xl md:border-[8px] md:border-white overflow-hidden relative flex flex-col">
+        
+        <header className="bg-white/80 backdrop-blur-md shadow-sm flex-shrink-0 z-20 border-b border-pink-100 sticky top-0">
+          <div className="px-4 py-3 flex justify-between items-center">
+            <h1 className="text-xl font-bold text-gray-700 flex items-center gap-2 tracking-tight">
+              <RibbonIcon className="w-7 h-7 text-pink-500" />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-400">MoneyFlow</span>
+            </h1>
+            {/* PC版のヘッダーナビゲーションは廃止（下部タブに統一） */}
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="flex-1 overflow-hidden relative flex flex-col">
-        {activeTab !== 'add' && activeTab !== 'settings' && (
-           <div className="max-w-6xl mx-auto w-full pt-4 px-4 md:px-6">
-               <div className="rounded-[20px] overflow-hidden shadow-sm border border-pink-100">
-                   {renderPeriodSelector()}
-               </div>
-           </div>
-        )}
-        <div className="max-w-6xl mx-auto w-full h-full p-4 md:p-6 min-h-0 flex-1">
-          {/* ★修正: PCレイアウト変更 */}
-          <div className="hidden md:grid grid-cols-12 gap-6 h-full">
-            {/* 左側: 入力フォーム (常時表示・縦いっぱい) */}
-            <div className="col-span-4 h-full overflow-hidden">
-              {renderAddTransactionView()}
-            </div>
-            
-            {/* 右側: コンテンツエリア (ダッシュボード + 履歴 OR 設定) */}
-            <div className="col-span-8 h-full overflow-hidden">
-              {activeTab === 'settings' ? renderSettingsView() : (
-                <div className="flex flex-col h-full gap-6">
-                   {/* 右上: 予算/ダッシュボード (スクロール可能) */}
-                   <div className="flex-1 min-h-0 bg-white rounded-[24px] shadow-sm border border-pink-100 overflow-hidden flex flex-col relative">
-                      <div className="p-5 h-full overflow-y-auto">
-                        {renderDashboardView()}
-                      </div>
-                   </div>
-                   {/* 右下: 履歴リスト (スクロール可能) */}
-                   <div className="flex-1 min-h-0">
-                      {renderHistoryListView()}
-                   </div>
+        <div className="flex-1 overflow-hidden relative flex flex-col">
+          {activeTab !== 'add' && activeTab !== 'settings' && (
+            <div className="w-full pt-4 px-4">
+                <div className="rounded-[20px] overflow-hidden shadow-sm border border-pink-100">
+                    {renderPeriodSelector()}
                 </div>
-              )}
             </div>
-          </div>
+          )}
           
-          {/* モバイルレイアウト (変更なし) */}
-          <div className="md:hidden h-full pb-20 flex flex-col">
+          <div className="w-full h-full p-4 min-h-0 flex-1 pb-20">
+            {/* 画面切り替えロジックを統一 */}
             {activeTab === 'dashboard' && renderDashboardView()}
             {activeTab === 'list' && renderHistoryListView()}
             {activeTab === 'add' && renderAddTransactionView()}
             {activeTab === 'settings' && renderSettingsView()}
           </div>
         </div>
+        
+        {/* Navigation Bar (全デバイス共通) */}
+        <nav className="fixed md:absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pink-100 pb-safe-area z-30 shadow-[0_-4px_6px_-1px_rgba(255,192,203,0.1)]">
+          <div className="flex justify-around items-center h-16 px-2">
+            <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'dashboard' ? 'text-pink-500' : 'text-gray-300'}`}><LayoutDashboard className="w-5 h-5" /><span className="text-[10px] font-bold">ホーム</span></button>
+            <button onClick={() => setActiveTab('list')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'list' ? 'text-pink-500' : 'text-gray-300'}`}><List className="w-6 h-6" /><span className="text-[10px] font-bold">履歴</span></button>
+            <div className="relative -top-6"><button onClick={() => setActiveTab('add')} className="bg-gradient-to-tr from-pink-400 to-rose-400 text-white rounded-full p-4 shadow-lg shadow-pink-200 transform transition active:scale-95 border-[6px] border-[#FFF5F7]"><Plus className="w-6 h-6" /></button></div>
+            <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'settings' ? 'text-pink-500' : 'text-gray-300'}`}><Settings className="w-5 h-5" /><span className="text-[10px] font-bold">設定</span></button>
+            <div className="w-full"></div>
+          </div>
+        </nav>
+
       </div>
-      
-      {/* Mobile Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pink-100 pb-safe-area z-30 shadow-[0_-4px_6px_-1px_rgba(255,192,203,0.1)]">
-        <div className="flex justify-around items-center h-16 px-2">
-          <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'dashboard' ? 'text-pink-500' : 'text-gray-300'}`}><LayoutDashboard className="w-5 h-5" /><span className="text-[10px] font-bold">ホーム</span></button>
-          <button onClick={() => setActiveTab('list')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'list' ? 'text-pink-500' : 'text-gray-300'}`}><List className="w-6 h-6" /><span className="text-[10px] font-bold">履歴</span></button>
-          <div className="relative -top-6"><button onClick={() => setActiveTab('add')} className="bg-gradient-to-tr from-pink-400 to-rose-400 text-white rounded-full p-4 shadow-lg shadow-pink-200 transform transition active:scale-95 border-[6px] border-[#FFF5F7]"><Plus className="w-6 h-6" /></button></div>
-          <button onClick={() => setActiveTab('settings')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'settings' ? 'text-pink-500' : 'text-gray-300'}`}><Settings className="w-5 h-5" /><span className="text-[10px] font-bold">設定</span></button>
-          <div className="w-full"></div>
-        </div>
-      </nav>
     </div>
   );
 }
