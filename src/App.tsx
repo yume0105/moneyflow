@@ -983,17 +983,33 @@ export default function App() {
            </div>
         )}
         <div className="max-w-6xl mx-auto w-full h-full p-4 md:p-6 min-h-0 flex-1">
+          {/* ★修正: PCレイアウト変更 */}
           <div className="hidden md:grid grid-cols-12 gap-6 h-full">
-            <div className="col-span-5 flex flex-col gap-6 h-full overflow-hidden">
-              <div className="flex-shrink-0 max-h-[60%] flex flex-col">{renderAddTransactionView()}</div>
-              <div className="flex-1 overflow-hidden bg-white rounded-[24px] shadow-sm border border-pink-100 flex flex-col relative">
-                 <div className="p-5 overflow-y-auto flex-1 bg-white">{renderDashboardView()}</div>
-              </div>
+            {/* 左側: 入力フォーム (常時表示・縦いっぱい) */}
+            <div className="col-span-4 h-full overflow-hidden">
+              {renderAddTransactionView()}
             </div>
-            <div className="col-span-7 h-full overflow-hidden">
-              {activeTab === 'settings' ? renderSettingsView() : renderHistoryListView()}
+            
+            {/* 右側: コンテンツエリア (ダッシュボード + 履歴 OR 設定) */}
+            <div className="col-span-8 h-full overflow-hidden">
+              {activeTab === 'settings' ? renderSettingsView() : (
+                <div className="flex flex-col h-full gap-6">
+                   {/* 右上: 予算/ダッシュボード (スクロール可能) */}
+                   <div className="flex-1 min-h-0 bg-white rounded-[24px] shadow-sm border border-pink-100 overflow-hidden flex flex-col relative">
+                      <div className="p-5 h-full overflow-y-auto">
+                        {renderDashboardView()}
+                      </div>
+                   </div>
+                   {/* 右下: 履歴リスト (スクロール可能) */}
+                   <div className="flex-1 min-h-0">
+                      {renderHistoryListView()}
+                   </div>
+                </div>
+              )}
             </div>
           </div>
+          
+          {/* モバイルレイアウト (変更なし) */}
           <div className="md:hidden h-full pb-20 flex flex-col">
             {activeTab === 'dashboard' && renderDashboardView()}
             {activeTab === 'list' && renderHistoryListView()}
